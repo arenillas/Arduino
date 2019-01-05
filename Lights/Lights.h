@@ -9,7 +9,7 @@
 #ifndef Lights_h
 #define Lights_h
 
-#include <stdint.h>
+#include "Arduino.h"
 
 #define FULL_COLOR    1
 #define DROP          2
@@ -46,7 +46,7 @@ class AtCommand{
     uint64_t Address64bit;
     uint16_t Address16bit;
     uint8_t RemoteOptions;
-    uint16_t AtCommand;
+    uint16_t Command;
     uint8_t Value;
     uint8_t Checksum;    
   public:
@@ -67,6 +67,17 @@ class TxCommand{
     TxCommand(void);
     Send(uint64_t addr64, uint8_t payload[], uint8_t len);
 };
+
+class EffectsManager{ 
+  private:
+	Message m;	
+	AtCommand at;
+	TxCommand tx;
+  public:
+    EffectsManager(void);
+    Change(uint64_t addr64, uint8_t payload[], uint8_t len);
+};
+
 
 
 #endif	//simpleNTP
