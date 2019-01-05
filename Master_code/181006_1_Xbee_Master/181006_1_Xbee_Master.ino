@@ -175,8 +175,8 @@ uint8_t TotalStepsB = 0;
 uint8_t CoolingB = 0;
 uint8_t SparkingB = 0;
 //uint8_t payload[] = {StickA, EffectA, RedA, GreenA, BlueA, Interval1A, Interval2A, TotalStepsA, CoolingA, SparkingA};
-uint8_t payload1[] = {StickA, 1, 100, 0, 0, 100, 100, 100, CoolingA, SparkingA};
-uint8_t payload2[] = {StickA, BREATHE, 0, 100, 0, 30, 8, 100, CoolingA, SparkingA, StickB, EffectB, 0, 0, 100, Interval1B, Interval2B, TotalStepsB, CoolingB, SparkingB};
+uint8_t payload1[] = {StickA, 1, 0, 0, 100, 100, 100, 100, CoolingA, SparkingA};
+uint8_t payload2[] = {StickA, DOUBLE_DROP, 255, 96, 12, 100, 100, 100, CoolingA, SparkingA, StickB, EffectB, 0, 0, 100, Interval1B, Interval2B, TotalStepsB, CoolingB, SparkingB};
 uint8_t payload3[] = {StickB, EffectB, 0, 0, 0, Interval1B, Interval2B, TotalStepsB, CoolingB, SparkingB};
 uint8_t payload4[] = {StickA, EffectA, 0, 0, 100, Interval1A, Interval2A, TotalStepsA, CoolingA, SparkingA, StickB, EffectB, 0, 0, 0, Interval1B, Interval2B, TotalStepsB, CoolingB, SparkingB};
 
