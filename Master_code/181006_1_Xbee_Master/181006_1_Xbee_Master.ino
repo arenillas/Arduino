@@ -33,6 +33,7 @@ uint8_t payload1[] = {StickA, 1, 100, 0, 0, 100, 100, 100, CoolingA, SparkingA};
 uint8_t payload2[] = {StickA, BREATHE, 0, 100, 0, 30, 8, 100, CoolingA, SparkingA, StickB, EffectB, 0, 0, 100, Interval1B, Interval2B, TotalStepsB, CoolingB, SparkingB};
 uint8_t payload3[] = {StickB, EffectB, 0, 0, 0, Interval1B, Interval2B, TotalStepsB, CoolingB, SparkingB};
 uint8_t payload4[] = {StickA, EffectA, 0, 0, 100, Interval1A, Interval2A, TotalStepsA, CoolingA, SparkingA, StickB, EffectB, 0, 0, 0, Interval1B, Interval2B, TotalStepsB, CoolingB, SparkingB};
+uint8_t payload5[] = {StickA, BREATHE, 0, 100, 0, 30, 8, 100, CoolingA, SparkingA, StickA, BREATHE, 0, 0, 100, 30, 8, 100, CoolingA, SparkingA, StickB, EffectB, 0, 0, 100, Interval1B, Interval2B, TotalStepsB, CoolingB, SparkingB};
 
 
 void setup(){  
@@ -54,6 +55,7 @@ void loop(){
   delay(5000);
   eManager.Change(Slave_address, payload3, 10);
   delay(5000);
+  eManager.Change(Slave_address, payload5, 30);
   while(1);  
 }
 
