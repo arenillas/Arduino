@@ -24,17 +24,17 @@ int change_pin(){
 Message::Message(){
   pos = 0;     
 }
-Message::Fill(uint8_t value){
+void Message::Fill(uint8_t value){
   content[pos] = value;
  pos++;
 }
-Message::Clr(){
+void Message::Clr(){
   for (int i = 0; i < 20; i++) { 
 	content[i] = 0;
 	pos = 0;
   }
 }
-Message::Ready(){
+int Message::Ready(){
   if ((content[11] == 0x55)){
 	return 1;
   }
@@ -46,17 +46,20 @@ Message::Ready(){
 
 // At Remote Command Class
 AtRemoteCommand::AtRemoteCommand(){
+	Start_delimiter = 0x7E;
+    Length = 0x0010;
+    Frame_type = 0x17;
+    Frame_ID = 0x00;
+	Address64bit = 0;
+	Address16bit = 0xFFFE;
+	RemoteOptions = 0x02;
+	Command = 0x4435;
+	Value = 0;
+    Checksum = 0; 
 }
-AtRemoteCommand::Send(uint64_t addr64, uint8_t val){
-  Length = 0x0010;
+void AtRemoteCommand::Send(uint64_t addr64, uint8_t val){
   uint8_t Frame[Length];
-  Start_delimiter = 0x7E;      
-  Frame_type = 0x17;
-  Frame_ID = 0x00;
   Address64bit = addr64;
-  Address16bit = 0xFFFE;
-  RemoteOptions = 0x02;
-  Command = 0x4435;
   Value = val;
   Frame[0] = Frame_type;
   Frame[1] = Frame_ID;
@@ -82,7 +85,7 @@ AtRemoteCommand::Send(uint64_t addr64, uint8_t val){
   Serial.write((byte)Start_delimiter);        
   Serial.write((byte)((Length >> 8) & 0xFF));
   Serial.write((byte)(Length & 0xFF));
-  for (int i = 0; i < Length; i++){
+  for (unsigned int i = 0; i < Length; i++){
 	Serial.write((byte)Frame[i]);
   }
   Serial.write((byte)Checksum);
@@ -90,15 +93,17 @@ AtRemoteCommand::Send(uint64_t addr64, uint8_t val){
 
 
 // At Command Class
-AtCommand::AtCommand(){     
-}
-AtCommand::Send(uint8_t val){
+AtCommand::AtCommand(){  
   Length = 0x0005;
-  uint8_t Frame[Length];
   Start_delimiter = 0x7E;      
   Frame_type = 0x08;
   Frame_ID = 0x00;     
   Command = 0x4435;
+  Value = 0;
+  Checksum = 0;   
+}
+void AtCommand::Send(uint8_t val){
+  uint8_t Frame[Length];
   Value = val;
   Frame[0] = Frame_type;
   Frame[1] = Frame_ID;
@@ -113,7 +118,7 @@ AtCommand::Send(uint8_t val){
   Serial.write((byte)Start_delimiter);        
   Serial.write((byte)((Length >> 8) & 0xFF));
   Serial.write((byte)(Length & 0xFF));
-  for (int i = 0; i < Length; i++){
+  for (unsigned int i = 0; i < Length; i++){
 	Serial.write((byte)Frame[i]);
   }
   Serial.write((byte)Checksum);
@@ -122,15 +127,18 @@ AtCommand::Send(uint8_t val){
 
 // Tx Command Class
 TxCommand::TxCommand(){
-}
-TxCommand::Send(uint64_t addr64, uint8_t payload[], uint8_t len){
-  Length = len + 11;
-  uint8_t Frame[Length];
+  Length = 0;
   Start_delimiter = 0x7E;      
   Frame_type = 0x00;
   Frame_ID = 0x00;
-  Address64bit = addr64;
+  Address64bit = 0;
   Options = 0x00;
+  Checksum = 0;
+}
+void TxCommand::Send(uint64_t addr64, uint8_t payload[], uint8_t len){
+  Length = len + 11;
+  uint8_t Frame[Length];
+  Address64bit = addr64;
   Frame[0] = Frame_type;
   Frame[1] = Frame_ID;
   Frame[2] = (Address64bit >> 56) & 0xFF;
@@ -153,7 +161,7 @@ TxCommand::Send(uint64_t addr64, uint8_t payload[], uint8_t len){
   Serial.write((byte)Start_delimiter);        
   Serial.write((byte)((Length >> 8) & 0xFF));
   Serial.write((byte)(Length & 0xFF));
-  for (int i = 0; i < Length; i++){
+  for (unsigned int i = 0; i < Length; i++){
 	Serial.write((byte)Frame[i]);
   }
   Serial.write((byte)Checksum);
@@ -163,11 +171,8 @@ TxCommand::Send(uint64_t addr64, uint8_t payload[], uint8_t len){
 // EffectsManager Class
 EffectsManager::EffectsManager(){
 	// Objects Creation
-	Message m = Message();	
-	AtRemoteCommand at = AtRemoteCommand();
-	TxCommand tx = TxCommand();
 }
-EffectsManager::Change(uint64_t addr64, uint8_t payload[], uint8_t len){
+void EffectsManager::Change(uint64_t addr64, uint8_t payload[], uint8_t len){
 	digitalWrite(13, change_pin());
 	at.Send(addr64, on);    
 	while (Serial.read() != 0x80);
@@ -190,21 +195,23 @@ EffectsManager::Change(uint64_t addr64, uint8_t payload[], uint8_t len){
 NeoPatterns::NeoPatterns(uint16_t pixels, uint8_t pin, uint8_t type)
 :Adafruit_NeoPixel(pixels, pin, type){
 	// Initialize everything and prepare to start
-	int effect;
-	int stick;
-	int Red = 0;
-	int Green = 0;
-	int Blue = 0;
-	int count = 0;
-	int Interval1 = 1;
-	int Interval2 = 1;
-	int TotalSteps = 1;
-	int Cooling = 1;
-	int Sparking = 1;
+	Interval = 1;
+	Interval1 = 1;
+	Interval2 = 1;
+	lastUpdate = 1;
+	TotalSteps = 1;
+	Cooling = 1;
+	Sparking = 1;	
+	ActivePattern = 0;  
+    Direction = FORWARD;
+	Color1 = Color(0, 0, 0);
+	Color2 = Color(0, 0, 0);    
+    Index = 1;
+    Change = 0; 	
 }
         
 // Update the pattern
-NeoPatterns::Update(){
+void NeoPatterns::Update(){
 	if((millis() - lastUpdate) > Interval){
 	  lastUpdate = millis();
 	  switch(ActivePattern){
@@ -248,7 +255,7 @@ NeoPatterns::Update(){
 }
 
 
-NeoPatterns::OnComplete(){
+void NeoPatterns::OnComplete(){
 	// Stick Completion Callback
 	if ((ActivePattern == DROP) || (ActivePattern == DOUBLE_DROP)){
 		FullColor(Color(0, 0, 0));
@@ -262,7 +269,7 @@ NeoPatterns::OnComplete(){
 
 
 // Increment the Index and reset at the end
-NeoPatterns::Increment(){
+void NeoPatterns::Increment(){
 	if (Direction == FORWARD){
 		Index++;
 		if (Index >= TotalSteps){
@@ -279,8 +286,9 @@ NeoPatterns::Increment(){
 	}
 }
 
+
 // Initialize for a Full Color
-NeoPatterns::FullColor(uint32_t color1){
+void NeoPatterns::FullColor(uint32_t color1){
 	ActivePattern = FULL_COLOR;    
 	Color1 = color1;
 	ColorSet(Color1);
@@ -292,7 +300,7 @@ NeoPatterns::FullColor(uint32_t color1){
 //}
 
 // Initialize for a Drop
-NeoPatterns::Drop(uint32_t color1, uint8_t interval){
+void NeoPatterns::Drop(uint32_t color1, uint8_t interval){
 	ColorSet(Color(0, 0, 0));
 	ActivePattern = DROP;
 	Interval = interval;
@@ -302,8 +310,8 @@ NeoPatterns::Drop(uint32_t color1, uint8_t interval){
 }
 
 // Update the Drop Pattern
-NeoPatterns::DropUpdate(){
-	for (int i = 0; i < numPixels(); i++){
+void NeoPatterns::DropUpdate(){
+	for (unsigned int i = 0; i < numPixels(); i++){
 		if (i == Index){
 			setPixelColor(i, Color1);
 		}
@@ -319,7 +327,7 @@ NeoPatterns::DropUpdate(){
 } 
 
 // Initialize for a Double Drop
-NeoPatterns::DoubleDrop(uint32_t color1, uint8_t interval){
+void NeoPatterns::DoubleDrop(uint32_t color1, uint8_t interval){
 	ColorSet(Color(0, 0, 0));
 	ActivePattern = DOUBLE_DROP;
 	Interval = interval;
@@ -329,8 +337,8 @@ NeoPatterns::DoubleDrop(uint32_t color1, uint8_t interval){
 }
 
 // Update the Drop Pattern
-NeoPatterns::DoubleDropUpdate(){
-	for (int i = 0; i < numPixels(); i++){
+void NeoPatterns::DoubleDropUpdate(){
+	for (unsigned int i = 0; i < numPixels(); i++){
 		if (i == Index){
 			setPixelColor(i, Color1);
 		}
@@ -346,7 +354,7 @@ NeoPatterns::DoubleDropUpdate(){
 } 
 
 // Initialize for a Sparkle
-NeoPatterns::Sparkle(uint32_t color1, uint8_t interval){
+void NeoPatterns::Sparkle(uint32_t color1, uint8_t interval){
 	ColorSet(Color(0, 0, 0));
 	ActivePattern = SPARKLE;
 	Color1 = color1;  
@@ -355,7 +363,7 @@ NeoPatterns::Sparkle(uint32_t color1, uint8_t interval){
 }
 
 // Update the Sparkle Pattern
-NeoPatterns::SparkleUpdate(){    
+void NeoPatterns::SparkleUpdate(){    
 	if (getPixelColor(Index) == 0){
 		Index = random(numPixels());
 		setPixelColor(Index, Color1);
@@ -367,7 +375,7 @@ NeoPatterns::SparkleUpdate(){
 }
 
 // Initialize for a Strobe
-NeoPatterns::Strobe(uint32_t color1, uint8_t interval1, uint8_t interval2, uint8_t steps){
+void NeoPatterns::Strobe(uint32_t color1, uint8_t interval1, uint8_t interval2, uint8_t steps){
 	ActivePattern = STROBE;
 	Index = 0;
 	Color1 = color1;   
@@ -375,11 +383,12 @@ NeoPatterns::Strobe(uint32_t color1, uint8_t interval1, uint8_t interval2, uint8
 	Interval1 = interval1;
 	Interval2 = interval2;
 	TotalSteps = steps;
+	ColorSet(Color(0, 0, 0));
 } 
 
 // Update the Strobe Pattern
-NeoPatterns::StrobeUpdate(){    
-	for(int i=0; i< numPixels(); i++){
+void NeoPatterns::StrobeUpdate(){    
+	for(unsigned int i=0; i< numPixels(); i++){
 		if (getPixelColor(i) == 0){
 			setPixelColor(i, Color1);
 			Interval = Interval1;        
@@ -400,7 +409,7 @@ NeoPatterns::StrobeUpdate(){
 }
 
 // Initialize for a Fade
-NeoPatterns::Fade(uint32_t color1, uint16_t steps, uint8_t interval){
+void NeoPatterns::Fade(uint32_t color1, uint8_t interval, uint16_t steps){
 	ActivePattern = FADE;
 	Interval = interval;
 	TotalSteps = steps;
@@ -410,7 +419,7 @@ NeoPatterns::Fade(uint32_t color1, uint16_t steps, uint8_t interval){
 }
 
 // Update the Fade Pattern
-NeoPatterns::FadeUpdate(){
+void NeoPatterns::FadeUpdate(){
 	// Calculate linear interpolation between Color1 and Color2
 	// Optimise order of operations to minimize truncation error
 	uint8_t red = ((Red(Color2) * (TotalSteps - Index)) + (Red(Color1) * Index)) / TotalSteps;
@@ -424,7 +433,7 @@ NeoPatterns::FadeUpdate(){
 }
 
 // Initialize for a Rainbow
-NeoPatterns::Rainbow(uint16_t steps, uint8_t interval){
+void NeoPatterns::Rainbow(uint8_t interval,  uint16_t steps){
 	ActivePattern = RAINBOW;
 	Interval = interval;
 	TotalSteps = steps;
@@ -433,7 +442,7 @@ NeoPatterns::Rainbow(uint16_t steps, uint8_t interval){
 }  
 
 // Update the Rainbow Pattern
-NeoPatterns::RainbowUpdate(){
+void NeoPatterns::RainbowUpdate(){
 	// Calculate linear interpolation between Color1 and Color2
 	// Optimise order of operations to minimize truncation error
 	switch (Change){
@@ -481,7 +490,7 @@ NeoPatterns::RainbowUpdate(){
 }
 
 // Initialize for a Sweep
-NeoPatterns::Sweep(uint32_t color1, uint8_t interval){
+void NeoPatterns::Sweep(uint32_t color1, uint8_t interval){
 	ColorSet(Color(0, 0, 0));
 	ActivePattern = SWEEP;
 	Interval = interval;
@@ -491,12 +500,8 @@ NeoPatterns::Sweep(uint32_t color1, uint8_t interval){
 }
 
 // Update the Sweep Pattern
-NeoPatterns::SweepUpdate(){
-	for (int i = 0; i < numPixels(); i++){
-		if (i == Index){
-			setPixelColor(i, Color1);
-		}
-	}      
+void NeoPatterns::SweepUpdate(){
+	setPixelColor(Index, Color1);
 	show();
 	if (Index < TotalSteps -1){
 		Increment();
@@ -504,14 +509,14 @@ NeoPatterns::SweepUpdate(){
 }
 
 // Initialize for a Horizontal Fire
-NeoPatterns::Fire_h(uint32_t color1){
+void NeoPatterns::Fire_h(uint32_t color1){
 	ActivePattern = FIRE_H;
 	Color1 = color1;
 }
 
 // Update the Horizontal Fire Pattern
-NeoPatterns::Fire_hUpdate(){
-	for(int x = 0; x < numPixels(); x++){
+void NeoPatterns::Fire_hUpdate(){
+	for(unsigned int x = 0; x < numPixels(); x++){
 		int flicker = random(0,40);
 		int r1 = Red(Color1)-flicker;
 		int g1 = Green(Color1)-flicker;
@@ -526,7 +531,7 @@ NeoPatterns::Fire_hUpdate(){
 } 
 
 // Initialize for a Vertical Fire
-NeoPatterns::Fire_v(uint32_t color1, uint8_t interval1, uint8_t interval2, uint8_t cooling, uint8_t sparking){
+void NeoPatterns::Fire_v(uint8_t interval1, uint8_t interval2, uint8_t cooling, uint8_t sparking){
 	ActivePattern = FIRE_V;
 	Interval = interval1;
 	Interval2 = interval2;
@@ -535,11 +540,11 @@ NeoPatterns::Fire_v(uint32_t color1, uint8_t interval1, uint8_t interval2, uint8
 }
 
 // Update the Vertical Fire Pattern
-NeoPatterns::Fire_vUpdate(){
+void NeoPatterns::Fire_vUpdate(){
 	static byte heat[52];
 	int cooldown;  
 	// Step 1.  Cool down every cell a little
-	for(int i = 0; i < numPixels(); i++){
+	for(unsigned int i = 0; i < numPixels(); i++){
 		cooldown = random(0, ((Cooling * 10) / numPixels()) + 2);
 		if(cooldown>heat[i]){
 			heat[i]=0;
@@ -553,20 +558,20 @@ NeoPatterns::Fire_vUpdate(){
 		heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
 	}    
 	// Step 3.  Randomly ignite new 'sparks' near the bottom
-	if(random(255) < Sparking ){
+	if(random(255) < Sparking){
 		int y = random(7);
 		heat[y] = heat[y] + random(160,255);
 		//heat[y] = random(160,255);
 	}
 	// Step 4.  Convert heat to LED colors
-	for( int j = 0; j < numPixels(); j++) {
+	for(unsigned int j = 0; j < numPixels(); j++) {
 		setPixelHeatColor(j, heat[j], Interval2);
 	}    
 	show();
 }
 
 // Initialize for a Breathe
-NeoPatterns::Breathe(uint32_t color1, uint8_t interval, uint8_t steps){
+void NeoPatterns::Breathe(uint32_t color1, uint8_t interval, uint8_t steps){
 	ActivePattern = BREATHE;
 	Interval = interval;
 	Color1 = color1;
@@ -576,7 +581,7 @@ NeoPatterns::Breathe(uint32_t color1, uint8_t interval, uint8_t steps){
 }
 
 // Update the Breathe Pattern
-NeoPatterns::BreatheUpdate(){
+void NeoPatterns::BreatheUpdate(){
 	float  factor = sin(Index * PI / TotalSteps);
 	uint8_t red = Red(Color1) * factor;
 	uint8_t green = Green(Color1) * factor;
@@ -604,8 +609,8 @@ uint32_t NeoPatterns::DimColor(uint32_t color){
 }
 
 // Set all pixels to a color (synchronously)
-NeoPatterns::ColorSet(uint32_t color){
-	for (int i = 0; i < numPixels(); i++){
+void NeoPatterns::ColorSet(uint32_t color){
+	for (unsigned int i = 0; i < numPixels(); i++){
 		setPixelColor(i, color);
 	}
 	show();
@@ -626,7 +631,7 @@ uint8_t NeoPatterns::Blue(uint32_t color){
 	return color & 0xFF;
 }
 
-NeoPatterns::setPixelHeatColor (int Pixel, byte temperature, uint8_t type){
+void NeoPatterns::setPixelHeatColor (int Pixel, byte temperature, uint8_t type){
 	// Scale 'heat' down from 0-255 to 0-191
 	byte t192 = round((temperature/255.0)*191);
 
@@ -713,10 +718,20 @@ EffectsHandler::EffectsHandler(uint64_t addr64, uint8_t pin){
 	AtCommand at = AtCommand();
 	MasterAddress = addr64;
 	Trinket_pin = pin;
+	stick = 0;
+	effect = 0;
+	Red = 0;
+	Green = 0;
+	Blue = 0;
+	Interval1 = 0;
+	Interval2 = 0;
+	TotalSteps = 0;
+	Cooling = 0;
+	Sparking = 0;
 }
 
 
-EffectsHandler::Init(NeoPatterns Stripes[], uint8_t length){
+void EffectsHandler::Init(NeoPatterns Stripes[], uint8_t length){
 	for (int i=1; i <= length; i++){
 		Stripes[i-1].begin();
 		Stripes[i-1].ColorSet(Stripes[i-1].Color(0, 0, 0));
@@ -725,10 +740,9 @@ EffectsHandler::Init(NeoPatterns Stripes[], uint8_t length){
 }
 
 
-EffectsHandler::Listen(NeoPatterns Stripes[], uint8_t length){
+void EffectsHandler::Listen(NeoPatterns Stripes[], uint8_t length){
 	
 	int m;
-	uint8_t count;
 	uint16_t len;
 	len = 0;
 	m = 0;
@@ -747,7 +761,7 @@ EffectsHandler::Listen(NeoPatterns Stripes[], uint8_t length){
 			while(Serial.available() == 0);
 			Serial.read();
 		}  
-		for (int i = 0; i < ((len - 11) / 10); i++) {
+		for (unsigned int i = 0; i < ((len - 11) / 10); i++) {
 			for (int j = 0; j < 10; j++) {
 				switch (j){
 					case 0:
@@ -810,10 +824,10 @@ EffectsHandler::Listen(NeoPatterns Stripes[], uint8_t length){
 					Stripes[stick-1].Strobe(Stripes[stick-1].Color(Red, Green, Blue), Interval1, Interval2, TotalSteps);
 					break;
 				case 6:
-					Stripes[stick-1].Fade(Stripes[stick-1].Color(Red, Green, Blue), TotalSteps, Interval1);
+					Stripes[stick-1].Fade(Stripes[stick-1].Color(Red, Green, Blue), Interval1, TotalSteps);
 					break;
 				case 7:
-					Stripes[stick-1].Rainbow(TotalSteps,Interval1);
+					Stripes[stick-1].Rainbow(Interval1, TotalSteps);
 					break;
 				case 8:
 					Stripes[stick-1].Sweep(Stripes[stick-1].Color(Red, Green, Blue),Interval1);
@@ -822,9 +836,9 @@ EffectsHandler::Listen(NeoPatterns Stripes[], uint8_t length){
 					Stripes[stick-1].Fire_h(Stripes[stick-1].Color(Red, Green, Blue));
 					break;
 				case 10:
-					Stripes[stick-1].Fire_v(Stripes[stick-1].Color(Red, Green, Blue), Interval1, Interval2, Cooling, Sparking);
+					Stripes[stick-1].Fire_v(Interval1, Interval2, Cooling, Sparking);
 					// Valores que funcionan bien
-					// Stripes[stick-1].Fire_v(Stripes[stick-1].Color(Red, Green, Blue),50, Interval2, 55, 120);
+					// Stripes[stick-1].Fire_v(50, Interval2, 55, 120);
 					break;
 				case 11:
 					Stripes[stick-1].Breathe(Stripes[stick-1].Color(Red, Green, Blue), Interval1, TotalSteps);

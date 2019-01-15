@@ -38,9 +38,9 @@ class Message{
     uint8_t pos;
   public:
     Message(void);
-    Fill(uint8_t value);
-    Clr(void);
-    Ready(void);
+    void Fill(uint8_t value);
+    void Clr(void);
+    int Ready(void);
 };
 
 class AtRemoteCommand{ 
@@ -57,7 +57,7 @@ class AtRemoteCommand{
     uint8_t Checksum;    
   public:
     AtRemoteCommand(void);
-    Send(uint64_t addr64, uint8_t val);
+    void Send(uint64_t addr64, uint8_t val);
 };
 
 class AtCommand{ 
@@ -71,7 +71,7 @@ class AtCommand{
     uint8_t Checksum;    
   public:
     AtCommand(void);
-    Send(uint8_t val);
+    void Send(uint8_t val);
 };
 
 class TxCommand{ 
@@ -85,7 +85,7 @@ class TxCommand{
     uint8_t Checksum;
   public:
     TxCommand(void);
-    Send(uint64_t addr64, uint8_t payload[], uint8_t len);
+    void Send(uint64_t addr64, uint8_t payload[], uint8_t len);
 };
 
 class EffectsManager{ 
@@ -95,7 +95,7 @@ class EffectsManager{
 	TxCommand tx;
   public:
     EffectsManager(void);
-    Change(uint64_t addr64, uint8_t payload[], uint8_t len);
+    void Change(uint64_t addr64, uint8_t payload[], uint8_t len);
 };
 
 // NeoPattern Class - derived from the Adafruit_NeoPixel class  
@@ -115,37 +115,37 @@ class NeoPatterns : public Adafruit_NeoPixel{
     uint16_t Index;  // current step within the pattern
     uint16_t Change;  //  
 	uint32_t DimColor(uint32_t color);	
-	OnComplete(void);
-	Increment();
+	void OnComplete(void);
+	void Increment(void);
 	uint8_t Red(uint32_t color);
 	uint8_t Green(uint32_t color);
 	uint8_t Blue(uint32_t color);
-	setPixelHeatColor (int Pixel, byte temperature, uint8_t type);
+	void setPixelHeatColor (int Pixel, byte temperature, uint8_t type);
   public:
     NeoPatterns(uint16_t pixels, uint8_t pin, uint8_t type);
-    ColorSet(uint32_t color);
-    Update();
-    FullColor(uint32_t color1);
-    Drop(uint32_t color1, uint8_t interval);
-    DropUpdate();
-    DoubleDrop(uint32_t color1, uint8_t interval);
-    DoubleDropUpdate();
-    Sparkle(uint32_t color1, uint8_t interval);
-    SparkleUpdate();
-    Strobe(uint32_t color1, uint8_t interval1, uint8_t interval2, uint8_t steps);
-    StrobeUpdate();
-    Fade(uint32_t color1, uint16_t steps, uint8_t interval);
-    FadeUpdate();
-    Rainbow(uint16_t steps, uint8_t interval);
-    RainbowUpdate();
-    Sweep(uint32_t color1, uint8_t interval);
-    SweepUpdate();
-    Fire_h(uint32_t color1);
-    Fire_hUpdate();
-    Fire_v(uint32_t color1, uint8_t interval1, uint8_t interval2, uint8_t cooling, uint8_t sparking);
-    Fire_vUpdate();
-    Breathe(uint32_t color1, uint8_t interval, uint8_t steps);
-    BreatheUpdate();
+    void ColorSet(uint32_t color);
+    void Update();
+    void FullColor(uint32_t color1);
+    void Drop(uint32_t color1, uint8_t interval);
+    void DropUpdate();
+    void DoubleDrop(uint32_t color1, uint8_t interval);
+    void DoubleDropUpdate();
+    void Sparkle(uint32_t color1, uint8_t interval);
+    void SparkleUpdate();
+    void Strobe(uint32_t color1, uint8_t interval1, uint8_t interval2, uint8_t steps);
+    void StrobeUpdate();
+    void Fade(uint32_t color1, uint8_t interval, uint16_t steps);
+    void FadeUpdate();
+    void Rainbow(uint8_t interval, uint16_t steps);
+    void RainbowUpdate();
+    void Sweep(uint32_t color1, uint8_t interval);
+    void SweepUpdate();
+    void Fire_h(uint32_t color1);
+    void Fire_hUpdate();
+    void Fire_v(uint8_t interval1, uint8_t interval2, uint8_t cooling, uint8_t sparking);
+    void Fire_vUpdate();
+    void Breathe(uint32_t color1, uint8_t interval, uint8_t steps);
+    void BreatheUpdate();
 };
 
 class EffectsHandler{ 
@@ -153,6 +153,8 @@ class EffectsHandler{
 	uint8_t payload[1];
 	TxCommand tx;
 	AtCommand at;
+	uint64_t MasterAddress;
+	uint8_t Trinket_pin;
 	uint8_t stick;
 	uint8_t effect;
 	uint8_t Red;
@@ -163,12 +165,10 @@ class EffectsHandler{
 	uint8_t TotalSteps;
 	uint8_t Cooling;
 	uint8_t Sparking;
-	uint64_t MasterAddress;
-	uint8_t Trinket_pin;
   public:
     EffectsHandler(uint64_t addr64, uint8_t pin);
-    Init(NeoPatterns Stripes[], uint8_t length);
-    Listen(NeoPatterns Stripes[], uint8_t length);
+    void Init(NeoPatterns Stripes[], uint8_t length);
+    void Listen(NeoPatterns Stripes[], uint8_t length);
 };
 
 
