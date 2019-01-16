@@ -260,9 +260,10 @@ void NeoPatterns::OnComplete(){
 	if ((ActivePattern == DROP) || (ActivePattern == DOUBLE_DROP)){
 		FullColor(Color(0, 0, 0));
 		Interval = 255;
+		ActivePattern = NONE;
 	}
 	else{
-		ActivePattern = NULL;
+		ActivePattern = NONE;
 		Interval = 255;
 	}
 }
@@ -289,7 +290,8 @@ void NeoPatterns::Increment(){
 
 // Initialize for a Full Color
 void NeoPatterns::FullColor(uint32_t color1){
-	ActivePattern = FULL_COLOR;    
+	ActivePattern = FULL_COLOR;
+	Direction = FORWARD;    
 	Color1 = color1;
 	ColorSet(Color1);
 }
@@ -303,6 +305,7 @@ void NeoPatterns::FullColor(uint32_t color1){
 void NeoPatterns::Drop(uint32_t color1, uint8_t interval){
 	ColorSet(Color(0, 0, 0));
 	ActivePattern = DROP;
+	Direction = FORWARD;
 	Interval = interval;
 	TotalSteps = (numPixels() - 1);
 	Color1 = color1;
@@ -330,6 +333,7 @@ void NeoPatterns::DropUpdate(){
 void NeoPatterns::DoubleDrop(uint32_t color1, uint8_t interval){
 	ColorSet(Color(0, 0, 0));
 	ActivePattern = DOUBLE_DROP;
+	Direction = FORWARD;
 	Interval = interval;
 	TotalSteps = (numPixels() - 1) * 2;
 	Color1 = color1;
@@ -357,6 +361,7 @@ void NeoPatterns::DoubleDropUpdate(){
 void NeoPatterns::Sparkle(uint32_t color1, uint8_t interval){
 	ColorSet(Color(0, 0, 0));
 	ActivePattern = SPARKLE;
+	Direction = FORWARD;
 	Color1 = color1;  
 	Interval = interval;
 	Index = random(numPixels());     
@@ -377,6 +382,7 @@ void NeoPatterns::SparkleUpdate(){
 // Initialize for a Strobe
 void NeoPatterns::Strobe(uint32_t color1, uint8_t interval1, uint8_t interval2, uint8_t steps){
 	ActivePattern = STROBE;
+	Direction = FORWARD;
 	Index = 0;
 	Color1 = color1;   
 	Interval = interval1;
@@ -411,6 +417,7 @@ void NeoPatterns::StrobeUpdate(){
 // Initialize for a Fade
 void NeoPatterns::Fade(uint32_t color1, uint8_t interval, uint16_t steps){
 	ActivePattern = FADE;
+	Direction = FORWARD;
 	Interval = interval;
 	TotalSteps = steps;
 	Color2 = getPixelColor(0);
@@ -435,6 +442,7 @@ void NeoPatterns::FadeUpdate(){
 // Initialize for a Rainbow
 void NeoPatterns::Rainbow(uint8_t interval,  uint16_t steps){
 	ActivePattern = RAINBOW;
+	Direction = FORWARD;
 	Interval = interval;
 	TotalSteps = steps;
 	Index = 0;
@@ -493,6 +501,7 @@ void NeoPatterns::RainbowUpdate(){
 void NeoPatterns::Sweep(uint32_t color1, uint8_t interval){
 	ColorSet(Color(0, 0, 0));
 	ActivePattern = SWEEP;
+	Direction = FORWARD;
 	Interval = interval;
 	TotalSteps = numPixels();
 	Color1 = color1;
@@ -511,6 +520,7 @@ void NeoPatterns::SweepUpdate(){
 // Initialize for a Horizontal Fire
 void NeoPatterns::Fire_h(uint32_t color1){
 	ActivePattern = FIRE_H;
+	Direction = FORWARD;
 	Color1 = color1;
 }
 
@@ -533,6 +543,7 @@ void NeoPatterns::Fire_hUpdate(){
 // Initialize for a Vertical Fire
 void NeoPatterns::Fire_v(uint8_t interval1, uint8_t interval2, uint8_t cooling, uint8_t sparking){
 	ActivePattern = FIRE_V;
+	Direction = FORWARD;
 	Interval = interval1;
 	Interval2 = interval2;
 	Cooling = cooling;
@@ -558,7 +569,7 @@ void NeoPatterns::Fire_vUpdate(){
 		heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
 	}    
 	// Step 3.  Randomly ignite new 'sparks' near the bottom
-	if(random(255) < Sparking){
+	if((unsigned int)random(255) < Sparking){
 		int y = random(7);
 		heat[y] = heat[y] + random(160,255);
 		//heat[y] = random(160,255);
@@ -573,10 +584,10 @@ void NeoPatterns::Fire_vUpdate(){
 // Initialize for a Breathe
 void NeoPatterns::Breathe(uint32_t color1, uint8_t interval, uint8_t steps){
 	ActivePattern = BREATHE;
+	Direction = REVERSE;
 	Interval = interval;
 	Color1 = color1;
-	TotalSteps = steps;
-	Direction = REVERSE;
+	TotalSteps = steps;	
 	Index = TotalSteps-1;  
 }
 
@@ -714,8 +725,6 @@ EffectsHandler::EffectsHandler(uint64_t addr64, uint8_t pin){
 	// Payload of TX Message
 	payload[0] = {0x55};
 	// Objects Creation
-	TxCommand tx = TxCommand();
-	AtCommand at = AtCommand();
 	MasterAddress = addr64;
 	Trinket_pin = pin;
 	stick = 0;

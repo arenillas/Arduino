@@ -103,7 +103,7 @@ class NeoPatterns : public Adafruit_NeoPixel{
   private:
     // Member Variables:  
     uint8_t  ActivePattern;  // which pattern is running
-    uint8_t Direction;     // direction to run the pattern  
+    int Direction;     // direction to run the pattern  
     unsigned long Interval;   // milliseconds between updates
     unsigned long Interval1;   // milliseconds between updates
     unsigned long Interval2;   // milliseconds between updates
@@ -112,7 +112,7 @@ class NeoPatterns : public Adafruit_NeoPixel{
     unsigned long lastUpdate; // last update of position  
     uint32_t Color1, Color2;  // What colors are in use
     uint16_t TotalSteps;  // total number of steps in the pattern
-    uint16_t Index;  // current step within the pattern
+    unsigned int Index;  // current step within the pattern
     uint16_t Change;  //  
 	uint32_t DimColor(uint32_t color);	
 	void OnComplete(void);
